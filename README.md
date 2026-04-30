@@ -91,17 +91,7 @@ dotnet build IndependentCadaverInfectionBar.csproj -c Release
 
 ## Verification
 
-The repository includes lightweight PowerShell checks for pure logic and compatibility state behavior:
-
-```text
-powershell -ExecutionPolicy Bypass -File tools\TestInfectionBarCompatibilityState.ps1
-powershell -ExecutionPolicy Bypass -File tools\TestLanguageHelper.ps1
-powershell -ExecutionPolicy Bypass -File tools\TestVanillaArcTextLayout.ps1
-powershell -ExecutionPolicy Bypass -File tools\TestVanillaRingFillMapping.ps1
-powershell -ExecutionPolicy Bypass -File tools\TestVanillaWarningTextOffset.ps1
-```
-
-Manual multiplayer testing is still required for host/client installation matrix coverage.
+Build verification should be run against the local game and BepInEx reference paths used for development. Manual multiplayer testing is still required for host/client installation matrix coverage.
 
 ## Notes
 
