@@ -9,7 +9,6 @@ All notable changes to this project are documented here.
 - Updated project and plugin version metadata to `1.1.1`.
 - Clarified multiplayer installation guidance for host-required compatibility mode.
 - Removed debug symbol files from the Thunderstore release package.
-- Tightened Thunderstore package validation so debug symbols are not included in release zips.
 
 ## 1.1.0 - Host-Required Compatibility Mode
 
