@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>IndependentCadaverInfectionBar</RootNamespace>
     <AssemblyName>InfectionBar</AssemblyName>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
