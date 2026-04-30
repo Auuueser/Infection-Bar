@@ -11,7 +11,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "InfectionBar";
     public const string PluginName = "InfectionBar";
-    public const string PluginVersion = "1.0.0";
+    public const string PluginVersion = "1.1.0";
     // Multiple tick sources keep the HUD alive across mod stacks that suppress one update path.
     internal static readonly bool EnableHudManagerTickFallback = true;
 
@@ -29,6 +29,7 @@ public sealed class Plugin : BaseUnityPlugin
     {
         DontDestroyOnLoad(gameObject);
         pluginLogger = Logger;
+        InfectionBarCompatibility.Initialize(Logger);
 
         ModConfig.Bind(Config);
 

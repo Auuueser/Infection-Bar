@@ -4,6 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>IndependentCadaverInfectionBar</RootNamespace>
     <AssemblyName>InfectionBar</AssemblyName>
+    <Version>1.1.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -48,6 +49,10 @@
       <HintPath>$(GameManagedDir)Unity.Netcode.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.Collections">
+      <HintPath>$(GameManagedDir)Unity.Collections.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="BepInEx">
       <HintPath>$(BepInExCoreDir)BepInEx.dll</HintPath>
       <Private>False</Private>
@@ -64,5 +69,8 @@
     <Compile Remove="build_tmpbin\**\*.cs" />
     <Compile Remove="build_tmpobj\**\*.cs" />
     <Compile Remove="tempbin\**\*.cs" />
+    <Compile Remove="github\**\*.cs" />
+    <Compile Remove="thunderstore\**\*.cs" />
+    <Compile Remove="thunderstore-tools\**\*.cs" />
   </ItemGroup>
 </Project>

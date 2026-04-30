@@ -194,6 +194,13 @@ internal sealed class InfectionBarController : MonoBehaviour
 
         lastTickFrame = Time.frameCount;
 
+        InfectionBarCompatibility.Tick();
+        if (!InfectionBarCompatibility.HudAllowed)
+        {
+            HideForCompatibility();
+            return;
+        }
+
         ResetSceneCachesIfHudManagerChanged();
         PlayerControllerB player = dataProvider.GetLocalPlayer();
         EnsureInfectionUI(player);
@@ -1294,6 +1301,42 @@ internal sealed class InfectionBarController : MonoBehaviour
         loggedNativeHudParentFallback = false;
         loggedMissingSprintMeter = false;
         loggedVanillaSprintMeterDiagnostics = false;
+    }
+
+    private void HideForCompatibility()
+    {
+        dataProvider.ResetCadaverGrowthCache();
+        RestoreVanillaWarningTextOffset();
+        RestoreOriginalWeightCounter();
+
+        if (infectionRoot != null && infectionRoot.gameObject.activeSelf)
+        {
+            infectionRoot.gameObject.SetActive(false);
+        }
+
+        if (vanillaWeightTextRoot != null && vanillaWeightTextRoot.gameObject.activeSelf)
+        {
+            vanillaWeightTextRoot.gameObject.SetActive(false);
+        }
+
+        if (vanillaInfectionTextRoot != null && vanillaInfectionTextRoot.gameObject.activeSelf)
+        {
+            vanillaInfectionTextRoot.gameObject.SetActive(false);
+        }
+
+        if (vanillaInfectionValueTextRoot != null && vanillaInfectionValueTextRoot.gameObject.activeSelf)
+        {
+            vanillaInfectionValueTextRoot.gameObject.SetActive(false);
+        }
+
+        lastVisibleState = false;
+        lastRenderedInfectionFillAmount = -1f;
+        lastRenderedInfectionPercent = -1;
+        lastRenderedInfectionLabel = string.Empty;
+        hasAppliedVanillaWeightText = false;
+        hasAppliedVanillaInfectionText = false;
+        hasClearedVanillaInfectionValueText = false;
+        layoutDirty = true;
     }
 
     private void RefreshLayoutIfNeeded(PlayerControllerB player)
