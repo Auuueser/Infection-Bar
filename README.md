@@ -2,18 +2,18 @@
 
 Infection Bar is a BepInEx plugin for *Lethal Company* that displays Cadaver Growth infection progress as an in-game HUD element when the lobby supports it.
 
-The project is intentionally narrow in scope: it renders a local HUD indicator, preserves the existing vanilla/EladsHUD presentation paths, and adds a lightweight host-required compatibility check. It does not synchronize infection values, add gameplay logic, block connections, or kick players.
+The project is intentionally narrow in scope. It renders a local HUD indicator from infection state that already exists in the running game, preserves the vanilla and EladsHUD-compatible presentation paths, and includes a lightweight host-required compatibility check. It does not add infection gameplay, exchange infection progress between players, block connections, or kick players.
 
-## Multiplayer model
+## Multiplayer Model
 
-Infection Bar now runs in host-required compatibility mode.
+Infection Bar runs in host-required compatibility mode.
 
 - The host must have Infection Bar installed.
-- Clients must also have Infection Bar installed for the HUD to become active.
-- When the host is not running Infection Bar, installed clients stay connected and hide the local HUD.
-- When the host is running Infection Bar but one or more connected clients are not, the host marks the lobby as incompatible, hides the local HUD, and reports that state to installed clients.
-- Mid-session joins are allowed. A newly connected client receives an 8 second grace period before being treated as missing the mod.
-- Lobby connectivity is not modified. The mod does not reject joins, disconnect clients, or affect movement/gameplay.
+- Every connected client must also have Infection Bar installed for the HUD to become active.
+- In lobbies hosted without Infection Bar, installed clients remain connected and the HUD stays hidden automatically.
+- When the host has Infection Bar installed but one or more connected clients do not, the host hides its local HUD and reports that compatibility state to installed clients.
+- Mid-session joins are allowed. Newly connected clients receive an 8 second grace period before compatibility is evaluated.
+- Lobby connectivity is not modified. The mod does not reject joins, disconnect clients, or affect movement or gameplay.
 
 The compatibility layer uses Unity Netcode named messages through `CustomMessagingManager`:
 
@@ -26,15 +26,17 @@ Messages are rate-limited and are not sent every frame. No `NetworkObject` prefa
 
 - Displays Cadaver Growth infection progress as a percentage.
 - Stops reading infection data while compatibility mode has disabled the HUD.
+- Uses slower retry intervals when Cadaver Growth data is not available, reducing scene-scan overhead in modpacks or lobbies without active Cadaver Growth state.
 - Supports an always-visible mode for checking the HUD at 0%.
 - Provides automatic HUD presentation selection.
 - Uses a compact current-style bar in compatible HUD environments.
 - Uses a vanilla stamina-ring style with the base game HUD.
-- Fades during terminal use and follows global HUD visibility where appropriate.
+- Preserves terminal fade behavior and follows global HUD visibility where appropriate.
+- Reuses the base HUD intro alpha behavior for both supported HUD presentation modes.
 - Supports automatic Chinese/English label selection, with manual override available in configuration.
 - Includes diagnostic logging and debug-only live layout refresh options.
 
-## HUD modes
+## HUD Modes
 
 `HudStyleMode` controls presentation:
 
@@ -42,7 +44,7 @@ Messages are rate-limited and are not sent every frame. No `NetworkObject` prefa
 - `CurrentStyle`: forces the compact bar presentation.
 - `VanillaStaminaRingStyle`: forces the vanilla stamina-ring presentation.
 
-## EladsHUD interoperability
+## EladsHUD Interoperability
 
 EladsHUD support is optional and runtime-only.
 

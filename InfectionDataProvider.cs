@@ -6,6 +6,9 @@ namespace IndependentCadaverInfectionBar;
 
 internal sealed class InfectionDataProvider
 {
+    private const float SuccessfulCadaverGrowthLookupIntervalSeconds = 0.25f;
+    private const float MissingCadaverGrowthLookupIntervalSeconds = 2f;
+
     private readonly ManualLogSource logger;
 
     private CadaverGrowthAI cachedCadaverGrowth;
@@ -60,12 +63,12 @@ internal sealed class InfectionDataProvider
             }
 
             cachedCadaverGrowth = cadaverGrowths[i];
-            nextCadaverGrowthLookupTime = Time.unscaledTime + 0.25f;
+            nextCadaverGrowthLookupTime = Time.unscaledTime + SuccessfulCadaverGrowthLookupIntervalSeconds;
             return cachedCadaverGrowth;
         }
 
         cachedCadaverGrowth = cadaverGrowths.Length > 0 ? cadaverGrowths[0] : null;
-        nextCadaverGrowthLookupTime = Time.unscaledTime + 0.25f;
+        nextCadaverGrowthLookupTime = Time.unscaledTime + MissingCadaverGrowthLookupIntervalSeconds;
         return cachedCadaverGrowth;
     }
 

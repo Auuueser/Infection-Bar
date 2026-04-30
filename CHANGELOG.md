@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here.
 
+## 1.1.2 - Performance and HUD Visibility Refinements
+
+### Fixed
+
+- Reduced frame-time cost while the HUD is enabled by backing off repeated `CadaverGrowthAI` scene scans when no usable Cadaver Growth data is available.
+- Cached automatic HUD style resolution and EladsHUD detection so plugin metadata is not scanned every frame.
+- Preserved terminal fade behavior in vanilla HUD mode by applying terminal fade before global hidden-HUD handling.
+- Reused the base HUD intro alpha behavior for both `CurrentStyle` and `VanillaStaminaRingStyle`.
+
+### Changed
+
+- Avoided redundant original weight counter visibility writes in vanilla HUD mode.
+- Avoided rebuilding infection text every frame when the displayed percentage and label have not changed.
+- Sampled reflected native HUD visibility state at a short fixed interval instead of every frame.
+- Added and updated static guard tests for compatibility, performance, terminal fade, and HUD intro alpha behavior.
+
 ## 1.1.1 - Thunderstore Packaging Cleanup
 
 ### Changed
@@ -22,7 +38,7 @@ All notable changes to this project are documented here.
 
 ### Changed
 
-- Changed multiplayer behavior from client-side-only HUD display to host-required compatibility mode.
+- Changed multiplayer behavior to host-required compatibility mode.
 - Installed clients now keep the connection and hide the HUD when the host is not running Infection Bar.
 - The host now marks the HUD unavailable when one or more connected clients do not have Infection Bar installed.
 - Installed clients now follow the host's compatibility state.
@@ -32,7 +48,7 @@ All notable changes to this project are documented here.
 ### Notes
 
 - Infection Bar still does not block clients from joining, kick players, or affect lobby connectivity.
-- Infection values are not synchronized by this mod.
+- Infection Bar only reads local infection state that already exists in the running game; it does not add networked infection gameplay.
 - No `NetworkObject` prefab was added.
 
 ## 1.0.0 - Initial Public Source Release

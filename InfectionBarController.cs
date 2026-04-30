@@ -13,18 +13,24 @@ internal sealed class InfectionBarController : MonoBehaviour
 {
     private const string EladsHudPluginGuid = "me.eladnlg.customhud";
     private const string VanillaWarningRootPathSuffix = "IngamePlayerHUD/SpecialHUDGraphics/RadiationIncrease";
+    private const float NativeHudStateRefreshIntervalSeconds = 0.1f;
+    private const float HudIntroAlphaSampleSeconds = 4f;
 
     private static Sprite pixelSprite;
     private static float nextTerminalLookupTime;
     private static float nextNativeHudElementLookupTime;
     private static float nextNativeHudParentFallbackLookupTime;
     private static float nextVanillaWarningRootLookupTime;
+    private static float nextNativeHudStateRefreshTime;
     private static HUDManager cachedHudManagerInstance;
     private static StartOfRound cachedStartOfRoundInstance;
     private static Terminal cachedTerminal;
+    private static NativeHudState cachedNativeHudState;
     private static Transform cachedNativeHudElementTransform;
     private static RectTransform cachedNativeHudParentFallback;
     private static RectTransform cachedVanillaWarningRoot;
+    private static bool cachedEladsHudInstalled;
+    private static bool hasCachedEladsHudInstalled;
     private static FieldInfo hudPlayerInfoField;
     private static FieldInfo hudContainerField;
     private static FieldInfo hudElementsField;
@@ -90,7 +96,11 @@ internal sealed class InfectionBarController : MonoBehaviour
     private bool loggedNativeHudParentFallback;
     private int lastTickFrame = -1;
     private float currentHudAlpha = 1f;
+    private RectTransform hudIntroAlphaSampleSource;
+    private float hudIntroAlphaSampleUntilTime;
+    private bool hudIntroAlphaSamplingActive;
     private bool layoutDirty = true;
+    private bool hudStyleDirty = true;
     private bool layoutConfigEventsSubscribed;
     private bool hasActiveHudStyle;
     private HudStyle activeHudStyle;
@@ -223,7 +233,14 @@ internal sealed class InfectionBarController : MonoBehaviour
 
     private void EnsureInfectionUI(PlayerControllerB player)
     {
+        if (infectionRoot != null && hasActiveHudStyle && !hudStyleDirty)
+        {
+            RefreshLayoutIfNeeded(player);
+            return;
+        }
+
         HudStyle desiredHudStyle = ResolveHudStyle();
+        hudStyleDirty = false;
         if (infectionRoot != null)
         {
             if (!hasActiveHudStyle || activeHudStyle != desiredHudStyle)
@@ -267,6 +284,7 @@ internal sealed class InfectionBarController : MonoBehaviour
         currentHudAlpha = nativeHudState.IsValid ? nativeHudState.Alpha : 1f;
         canvasGroup = rootObject.GetComponent<CanvasGroup>();
         canvasGroup.alpha = currentHudAlpha;
+        canvasGroup.ignoreParentGroups = true;
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
 
@@ -338,9 +356,12 @@ internal sealed class InfectionBarController : MonoBehaviour
 
         activeHudStyle = HudStyle.Current;
         hasActiveHudStyle = true;
+        hudStyleDirty = false;
+        StartHudIntroAlphaSampling((ResolveNativeHudElementTransform() as RectTransform) ?? nativeHudParent);
+        ApplyHudAlpha(currentHudAlpha * GetHudIntroAlphaMultiplier(nativeHudState));
     }
 
-    private static HudStyle ResolveHudStyle()
+    private HudStyle ResolveHudStyle()
     {
         string mode = (ModConfig.HudStyleMode?.Value ?? "Auto").Trim();
         if (string.Equals(mode, "Current", StringComparison.OrdinalIgnoreCase)
@@ -362,6 +383,18 @@ internal sealed class InfectionBarController : MonoBehaviour
 
     private static bool IsEladsHudInstalled()
     {
+        if (hasCachedEladsHudInstalled)
+        {
+            return cachedEladsHudInstalled;
+        }
+
+        cachedEladsHudInstalled = DetectEladsHudInstalled();
+        hasCachedEladsHudInstalled = true;
+        return cachedEladsHudInstalled;
+    }
+
+    private static bool DetectEladsHudInstalled()
+    {
         if (Chainloader.PluginInfos.ContainsKey(EladsHudPluginGuid))
         {
             return true;
@@ -371,9 +404,11 @@ internal sealed class InfectionBarController : MonoBehaviour
         {
             string guid = pluginInfo?.Metadata?.GUID ?? string.Empty;
             string name = pluginInfo?.Metadata?.Name ?? string.Empty;
-            string combined = guid + " " + name;
-            if (combined.IndexOf("Elads", StringComparison.OrdinalIgnoreCase) >= 0
-                && combined.IndexOf("HUD", StringComparison.OrdinalIgnoreCase) >= 0)
+            bool hasEladsMarker = guid.IndexOf("Elads", StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("Elads", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool hasHudMarker = guid.IndexOf("HUD", StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("HUD", StringComparison.OrdinalIgnoreCase) >= 0;
+            if (hasEladsMarker && hasHudMarker)
             {
                 return true;
             }
@@ -422,6 +457,7 @@ internal sealed class InfectionBarController : MonoBehaviour
 
         canvasGroup = rootObject.GetComponent<CanvasGroup>();
         canvasGroup.alpha = currentHudAlpha;
+        canvasGroup.ignoreParentGroups = true;
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
 
@@ -464,7 +500,10 @@ internal sealed class InfectionBarController : MonoBehaviour
 
         activeHudStyle = HudStyle.VanillaStaminaRing;
         hasActiveHudStyle = true;
+        hudStyleDirty = false;
         layoutDirty = false;
+        StartHudIntroAlphaSampling(sprintMeterRect);
+        ApplyHudAlpha(currentHudAlpha * GetHudIntroAlphaMultiplier(nativeHudState));
 
         if (ShouldLogDiagnostics())
         {
@@ -537,6 +576,7 @@ internal sealed class InfectionBarController : MonoBehaviour
         root = textObject.GetComponent<RectTransform>();
         group = textObject.GetComponent<CanvasGroup>();
         group.alpha = currentHudAlpha;
+        group.ignoreParentGroups = true;
         group.interactable = false;
         group.blocksRaycasts = false;
         root.gameObject.SetActive(false);
@@ -1091,14 +1131,20 @@ internal sealed class InfectionBarController : MonoBehaviour
             hiddenWeightCounterWasEnabled = weightCounter.enabled;
         }
 
-        weightCounter.enabled = false;
+        if (weightCounter.enabled)
+        {
+            weightCounter.enabled = false;
+        }
     }
 
     private void RestoreOriginalWeightCounter()
     {
         if (hiddenWeightCounter != null)
         {
-            hiddenWeightCounter.enabled = hiddenWeightCounterWasEnabled;
+            if (hiddenWeightCounter.enabled != hiddenWeightCounterWasEnabled)
+            {
+                hiddenWeightCounter.enabled = hiddenWeightCounterWasEnabled;
+            }
         }
 
         hiddenWeightCounter = null;
@@ -1233,10 +1279,12 @@ internal sealed class InfectionBarController : MonoBehaviour
         cachedNativeHudElementTransform = null;
         cachedNativeHudParentFallback = null;
         cachedVanillaWarningRoot = null;
+        cachedNativeHudState = default;
         nextTerminalLookupTime = 0f;
         nextNativeHudElementLookupTime = 0f;
         nextNativeHudParentFallbackLookupTime = 0f;
         nextVanillaWarningRootLookupTime = 0f;
+        nextNativeHudStateRefreshTime = 0f;
     }
 
     private void DestroyInfectionUI()
@@ -1296,7 +1344,9 @@ internal sealed class InfectionBarController : MonoBehaviour
         lastRenderedInfectionPercent = -1;
         lastRenderedInfectionLabel = string.Empty;
         currentHudAlpha = 1f;
+        StopHudIntroAlphaSampling();
         layoutDirty = true;
+        hudStyleDirty = true;
         loggedMissingNativeHudParent = false;
         loggedNativeHudParentFallback = false;
         loggedMissingSprintMeter = false;
@@ -1336,6 +1386,7 @@ internal sealed class InfectionBarController : MonoBehaviour
         hasAppliedVanillaWeightText = false;
         hasAppliedVanillaInfectionText = false;
         hasClearedVanillaInfectionValueText = false;
+        StopHudIntroAlphaSampling();
         layoutDirty = true;
     }
 
@@ -1344,22 +1395,10 @@ internal sealed class InfectionBarController : MonoBehaviour
         NativeHudState nativeHudState = GetNativeHudState();
         float targetHudAlpha = nativeHudState.IsValid ? nativeHudState.Alpha : 1f;
         currentHudAlpha = Mathf.MoveTowards(currentHudAlpha, targetHudAlpha, Time.unscaledDeltaTime * 12f);
-        canvasGroup.alpha = currentHudAlpha;
-        if (vanillaWeightTextCanvasGroup != null)
-        {
-            vanillaWeightTextCanvasGroup.alpha = currentHudAlpha;
-        }
+        float renderedHudAlpha = currentHudAlpha;
+        renderedHudAlpha *= GetHudIntroAlphaMultiplier(nativeHudState);
 
-        if (vanillaInfectionTextCanvasGroup != null)
-        {
-            vanillaInfectionTextCanvasGroup.alpha = currentHudAlpha;
-        }
-
-        if (vanillaInfectionValueTextCanvasGroup != null)
-        {
-            vanillaInfectionValueTextCanvasGroup.alpha = currentHudAlpha;
-        }
-
+        ApplyHudAlpha(renderedHudAlpha);
         if (activeHudStyle == HudStyle.VanillaStaminaRing)
         {
             RefreshVanillaStaminaRingLayout(player);
@@ -1449,6 +1488,96 @@ internal sealed class InfectionBarController : MonoBehaviour
         }
     }
 
+    private void ApplyHudAlpha(float alpha)
+    {
+        float clampedAlpha = Mathf.Clamp01(alpha);
+        canvasGroup.alpha = clampedAlpha;
+        if (vanillaWeightTextCanvasGroup != null)
+        {
+            vanillaWeightTextCanvasGroup.alpha = clampedAlpha;
+        }
+
+        if (vanillaInfectionTextCanvasGroup != null)
+        {
+            vanillaInfectionTextCanvasGroup.alpha = clampedAlpha;
+        }
+
+        if (vanillaInfectionValueTextCanvasGroup != null)
+        {
+            vanillaInfectionValueTextCanvasGroup.alpha = clampedAlpha;
+        }
+    }
+
+    private void StartHudIntroAlphaSampling(RectTransform sourceRect)
+    {
+        hudIntroAlphaSampleSource = sourceRect;
+        hudIntroAlphaSamplingActive = sourceRect != null;
+        hudIntroAlphaSampleUntilTime = hudIntroAlphaSamplingActive ? Time.unscaledTime + HudIntroAlphaSampleSeconds : 0f;
+    }
+
+    private void StopHudIntroAlphaSampling()
+    {
+        hudIntroAlphaSampleSource = null;
+        hudIntroAlphaSamplingActive = false;
+        hudIntroAlphaSampleUntilTime = 0f;
+    }
+
+    private float GetHudIntroAlphaMultiplier(NativeHudState nativeHudState)
+    {
+        if (!hudIntroAlphaSamplingActive)
+        {
+            return 1f;
+        }
+
+        if (Time.unscaledTime > hudIntroAlphaSampleUntilTime)
+        {
+            StopHudIntroAlphaSampling();
+            return 1f;
+        }
+
+        if (!nativeHudState.IsValid || nativeHudState.Alpha < 0.999f)
+        {
+            return 1f;
+        }
+
+        if (hudIntroAlphaSampleSource == null)
+        {
+            StopHudIntroAlphaSampling();
+            return 1f;
+        }
+
+        return SampleInheritedCanvasGroupAlpha(hudIntroAlphaSampleSource);
+    }
+
+    private static float SampleInheritedCanvasGroupAlpha(RectTransform sourceRect)
+    {
+        if (sourceRect == null)
+        {
+            return 1f;
+        }
+
+        float alpha = 1f;
+        bool foundCanvasGroup = false;
+        Transform current = sourceRect;
+        while (current != null)
+        {
+            CanvasGroup inheritedGroup = current.GetComponent<CanvasGroup>();
+            if (inheritedGroup != null)
+            {
+                alpha *= Mathf.Clamp01(inheritedGroup.alpha);
+                foundCanvasGroup = true;
+                if (inheritedGroup.ignoreParentGroups)
+                {
+                    break;
+                }
+            }
+
+            current = current.parent;
+        }
+
+        return foundCanvasGroup ? Mathf.Clamp01(alpha) : 1f;
+    }
+
     private void SubscribeLayoutConfigEvents()
     {
         if (layoutConfigEventsSubscribed || ModConfig.UiWidth == null)
@@ -1510,6 +1639,7 @@ internal sealed class InfectionBarController : MonoBehaviour
     private void OnLayoutConfigChanged(object sender, EventArgs args)
     {
         layoutDirty = true;
+        hudStyleDirty = true;
     }
 
     private void UpdateInfection(PlayerControllerB player)
@@ -1526,6 +1656,13 @@ internal sealed class InfectionBarController : MonoBehaviour
             return;
         }
 
+        if (!CanShowInfectionForPlayer(player))
+        {
+            SetInfectionVisible(false);
+            ApplyOrRestoreVanillaWarningTextOffset(false);
+            return;
+        }
+
         float infectionNormalized = GetInfectionNormalized(player);
         bool shouldShow = ShouldShowInfectionBar(player, infectionNormalized);
 
@@ -1538,14 +1675,14 @@ internal sealed class InfectionBarController : MonoBehaviour
 
         ApplyInfectionFillAmount(infectionNormalized);
 
-        string infectionLabel = GetInfectionLabel();
         int infectionPercent = Mathf.RoundToInt(infectionNormalized * 100f);
-        string infectionTextValue = FormatInfectionText(infectionLabel, infectionPercent);
-        if (lastRenderedInfectionPercent != infectionPercent || !string.Equals(lastRenderedInfectionLabel, infectionTextValue, StringComparison.Ordinal))
+        string infectionLabel = GetInfectionLabel();
+        if (lastRenderedInfectionPercent != infectionPercent || !string.Equals(lastRenderedInfectionLabel, infectionLabel, StringComparison.Ordinal))
         {
+            string infectionTextValue = FormatInfectionText(infectionLabel, infectionPercent);
             SetInfectionText(infectionTextValue);
             lastRenderedInfectionPercent = infectionPercent;
-            lastRenderedInfectionLabel = infectionTextValue;
+            lastRenderedInfectionLabel = infectionLabel;
         }
 
         if (activeHudStyle == HudStyle.VanillaStaminaRing)
@@ -1601,7 +1738,7 @@ internal sealed class InfectionBarController : MonoBehaviour
             return false;
         }
 
-        if (player == null || player.isPlayerDead || !player.isPlayerControlled)
+        if (!CanShowInfectionForPlayer(player))
         {
             return false;
         }
@@ -1614,12 +1751,36 @@ internal sealed class InfectionBarController : MonoBehaviour
         return infectionNormalized > 0f;
     }
 
+    private static bool CanShowInfectionForPlayer(PlayerControllerB player)
+    {
+        return player != null && !player.isPlayerDead && player.isPlayerControlled;
+    }
+
     private static NativeHudState GetNativeHudState()
     {
         HUDManager hudManager = HUDManager.Instance;
         if (hudManager == null)
         {
+            cachedNativeHudState = default;
+            nextNativeHudStateRefreshTime = 0f;
             return default;
+        }
+
+        if (Time.unscaledTime < nextNativeHudStateRefreshTime && cachedNativeHudState.IsValid)
+        {
+            return cachedNativeHudState;
+        }
+
+        cachedNativeHudState = ReadNativeHudState(hudManager);
+        nextNativeHudStateRefreshTime = Time.unscaledTime + NativeHudStateRefreshIntervalSeconds;
+        return cachedNativeHudState;
+    }
+
+    private static NativeHudState ReadNativeHudState(HUDManager hudManager)
+    {
+        if (IsTerminalInUse(hudManager))
+        {
+            return new NativeHudState(Mathf.Clamp01(ModConfig.TerminalFadeAlpha.Value), isValid: true);
         }
 
         if (hudHudHiddenField == null)
@@ -1633,11 +1794,6 @@ internal sealed class InfectionBarController : MonoBehaviour
         if (hudHidden)
         {
             return new NativeHudState(0f, isValid: true);
-        }
-
-        if (IsTerminalInUse(hudManager))
-        {
-            return new NativeHudState(Mathf.Clamp01(ModConfig.TerminalFadeAlpha.Value), isValid: true);
         }
 
         return new NativeHudState(1f, isValid: true);
