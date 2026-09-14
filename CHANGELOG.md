@@ -1,65 +1,95 @@
-# Changelog
+# 更新日志 / Changelog
 
-All notable changes to this project are documented here.
+<details>
+<summary><strong>中文</strong></summary>
 
-## 1.1.2 - Performance and HUD Visibility Refinements
+<details>
+<summary><strong>1.2.0 · 显示与配置</strong></summary>
 
-### Fixed
+- 许可证由 **MIT** 调整为 **GPL-3.0。**
+- 新增 **LethalConfig 局内设置与本地预览**，可实时调整显示、布局并预览感染值。
+- 新增**弧形文字**和**原版磅数位置复用**，优化横排文字避让与感染条隐藏时的原版显示。
+- 优化弧形感染文字与磅数的**间距和末端角度。**
+- 配置项支持**自动汉化**，自动语言通过 LC Chinese Project 稳定 GUID 判断，不再绑定具体版本。
+- 优化联机与感染显示性能，减少**重复请求、计算和临时分配。**
 
-- Reduced frame-time cost while the HUD is enabled by backing off repeated `CadaverGrowthAI` scene scans when no usable Cadaver Growth data is available.
-- Cached automatic HUD style resolution and EladsHUD detection so plugin metadata is not scanned every frame.
-- Preserved terminal fade behavior in vanilla HUD mode by applying terminal fade before global hidden-HUD handling.
-- Reused the base HUD intro alpha behavior for both `CurrentStyle` and `VanillaStaminaRingStyle`.
+</details>
 
-### Changed
+<details>
+<summary><strong>1.1.2 · 显示与性能</strong></summary>
 
-- Avoided redundant original weight counter visibility writes in vanilla HUD mode.
-- Avoided rebuilding infection text every frame when the displayed percentage and label have not changed.
-- Sampled reflected native HUD visibility state at a short fixed interval instead of every frame.
-- Added and updated static guard tests for compatibility, performance, terminal fade, and HUD intro alpha behavior.
+- 减少感染数据缺失时的重复查找，以及未变化的标签和透明度刷新。
+- 改善终端淡化与 HUD 入场透明度衔接，减少 HUD 样式的重复检测。
 
-## 1.1.1 - Thunderstore Packaging Cleanup
+</details>
 
-### Changed
+<details>
+<summary><strong>1.1.1 · 安装包整理</strong></summary>
 
-- Updated project and plugin version metadata to `1.1.1`.
-- Clarified multiplayer installation guidance for host-required compatibility mode.
-- Removed debug symbol files from the Thunderstore release package.
+- 从安装包中移除调试符号，明确多人安装要求。
 
-## 1.1.0 - Host-Required Compatibility Mode
+</details>
 
-### Added
+<details>
+<summary><strong>1.1.0 · 多人兼容</strong></summary>
 
-- Added a Unity Netcode named-message compatibility handshake between installed clients and the host.
-- Added host-side tracking for clients that have sent an Infection Bar hello message.
-- Added an 8 second grace period for newly connected clients before they are treated as missing the mod.
-- Added host state broadcasts for installed clients so the HUD can be enabled or disabled consistently across the lobby.
-- Added a focused compatibility state test script.
+- 加入房间握手与新玩家宽限期；主机或客户端缺少模组时自动隐藏感染条，不影响加入与连接。
 
-### Changed
+</details>
 
-- Changed multiplayer behavior to host-required compatibility mode.
-- Installed clients now keep the connection and hide the HUD when the host is not running Infection Bar.
-- The host now marks the HUD unavailable when one or more connected clients do not have Infection Bar installed.
-- Installed clients now follow the host's compatibility state.
-- The controller now stops before reading Cadaver Growth infection data while compatibility mode has disabled the HUD.
-- Documentation now describes multiplayer requirements and compatibility behavior explicitly.
+<details>
+<summary><strong>1.0.0 · 首个版本</strong></summary>
 
-### Notes
+- 提供尸体感染百分比、原版感染环与紧凑条形显示。
+- 支持自动样式、中英标签、布局调整、0% 常显与终端淡化。
 
-- Infection Bar still does not block clients from joining, kick players, or affect lobby connectivity.
-- Infection Bar only reads local infection state that already exists in the running game; it does not add networked infection gameplay.
-- No `NetworkObject` prefab was added.
+</details>
 
-## 1.0.0 - Initial Public Source Release
+</details>
 
-- Added an independent Cadaver Growth infection HUD display.
-- Added automatic HUD style selection.
-- Added vanilla HUD mode based on the running game's built-in stamina meter presentation.
-- Added compact current-style HUD presentation for compatible HUD environments.
-- Added configurable always-visible behavior.
-- Added terminal fade behavior and global HUD visibility handling.
-- Added Chinese and English infection label handling.
-- Added vanilla HUD curved text layout for infection and carried weight labels.
-- Added vanilla HUD warning text offset controls to reduce overlap with the infection ring.
-- Added debug-only diagnostics and live layout refresh options for troubleshooting.
+<details>
+<summary><strong>English</strong></summary>
+
+<details>
+<summary><strong>1.2.0 · Display and configuration</strong></summary>
+
+- Changed the license from **MIT** to **GPL-3.0**.
+- Added **live LethalConfig settings and local previews** to adjust display and layout and preview infection values in game.
+- Added **curved text** and **native weight placement reuse**, improving horizontal text clearance and native display restoration when infection is hidden.
+- Improved **spacing and end angles** for curved infection and weight text.
+- Added **automatic configuration localization**. Auto language detects LC Chinese Project by its stable GUID without requiring a specific version.
+- Optimized multiplayer and infection display performance, reducing **redundant requests, calculations and temporary allocations**.
+
+</details>
+
+<details>
+<summary><strong>1.1.2 · Display and performance</strong></summary>
+
+- Reduced repeated lookups when infection data is unavailable and avoided unchanged label and opacity updates.
+- Improved terminal fading and HUD intro opacity handling, with fewer repeated HUD-style checks.
+
+</details>
+
+<details>
+<summary><strong>1.1.1 · Package cleanup</strong></summary>
+
+- Removed debug symbols from the package and clarified multiplayer installation requirements.
+
+</details>
+
+<details>
+<summary><strong>1.1.0 · Multiplayer compatibility</strong></summary>
+
+- Added lobby handshakes and a grace period for new players. Missing host or client installations hide the HUD without affecting joins or connections.
+
+</details>
+
+<details>
+<summary><strong>1.0.0 · Initial version</strong></summary>
+
+- Introduced Cadaver Growth infection percentages with vanilla-ring and compact-bar presentation.
+- Added automatic style selection, Chinese and English labels, layout settings, always-visible display and terminal fading.
+
+</details>
+
+</details>

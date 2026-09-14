@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace IndependentCadaverInfectionBar
 {
@@ -74,7 +75,25 @@ internal static class VanillaArcTextLayout
         173.9f, 171.2f, 168.6f
     };
 
+    private const int LayoutCacheCapacity = 128;
+    private static readonly Dictionary<(string, VanillaArcTextTrack, float, float), VanillaArcGlyphLayout[]> LayoutCache = new Dictionary<(string, VanillaArcTextTrack, float, float), VanillaArcGlyphLayout[]>(LayoutCacheCapacity);
+    private static readonly Queue<(string, VanillaArcTextTrack, float, float)> LayoutCacheOrder = new Queue<(string, VanillaArcTextTrack, float, float)>(LayoutCacheCapacity);
+    internal static int CachedLayoutCount => LayoutCache.Count;
+
+    // Main-thread only. Returned immutable layouts contain no Unity objects.
     internal static VanillaArcGlyphLayout[] Build(string text, VanillaArcTextTrack track, float rootWidth, float rootHeight)
+    {
+        if (string.IsNullOrEmpty(text)) return Array.Empty<VanillaArcGlyphLayout>();
+        var key = (text, track, rootWidth, rootHeight);
+        if (LayoutCache.TryGetValue(key, out var cached)) return cached;
+        var built = BuildUncached(text, track, rootWidth, rootHeight);
+        if (LayoutCache.Count >= LayoutCacheCapacity) LayoutCache.Remove(LayoutCacheOrder.Dequeue());
+        LayoutCache.Add(key, built);
+        LayoutCacheOrder.Enqueue(key);
+        return built;
+    }
+
+    private static VanillaArcGlyphLayout[] BuildUncached(string text, VanillaArcTextTrack track, float rootWidth, float rootHeight)
     {
         string textValue = text ?? string.Empty;
         if (textValue.Length == 0)
@@ -192,7 +211,7 @@ internal static class VanillaArcTextLayout
             case VanillaArcTextTrack.InfectionLabelOuter:
                 return containsCjk
                     ? new TrackSettings(centerAngle: 40f, minAngleSpan: 19f, maxAngleSpan: 27f, advanceScale: 28f, innerClearance: 0f, outerClearance: 44f, fontScale: 0.50f, insideStroke: false, rotationMin: -62f, rotationMax: -38f, baselineFitDegree: 1)
-                    : new TrackSettings(centerAngle: 37f, minAngleSpan: 24f, maxAngleSpan: 39f, advanceScale: 22f, innerClearance: 0f, outerClearance: 46f, fontScale: 0.44f, insideStroke: false, rotationMin: -74f, rotationMax: -28f, smoothRotationStart: -37f, smoothRotationEnd: -65f, baselineHandleScale: 0.42f, baselineFitDegree: 0);
+                    : new TrackSettings(centerAngle: 37f, minAngleSpan: 24f, maxAngleSpan: 39f, advanceScale: 22f, innerClearance: 0f, outerClearance: 56f, fontScale: 0.44f, insideStroke: false, rotationMin: -64f, rotationMax: -28f, smoothRotationStart: -37f, smoothRotationEnd: -57f, baselineHandleScale: 0.42f, baselineFitDegree: 0);
             default:
                 return containsCjk
                     ? new TrackSettings(centerAngle: 45f, minAngleSpan: 8f, maxAngleSpan: 16f, advanceScale: 22f, innerClearance: 0f, outerClearance: 22.5f, fontScale: 0.40f, insideStroke: false, rotationMin: -46f, rotationMax: -28f, fixedFirstGlyphAngle: 48.8f, smoothRotationStart: -37f, smoothRotationEnd: -42f, baselineHandleScale: 0.32f, baselineFitDegree: 0, rotationMaxStep: 1.6f, rotationMaxPositiveStep: 0.8f)

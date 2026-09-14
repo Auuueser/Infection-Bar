@@ -54,21 +54,39 @@ internal sealed class InfectionDataProvider
             return cachedCadaverGrowth;
         }
 
-        CadaverGrowthAI[] cadaverGrowths = Object.FindObjectsOfType<CadaverGrowthAI>();
-        for (int i = 0; i < cadaverGrowths.Length; i++)
+        float now = Time.unscaledTime;
+        CadaverGrowthAI firstCadaverGrowth = null;
+        var spawnedEnemies = RoundManager.Instance?.SpawnedEnemies;
+        if (spawnedEnemies != null)
         {
-            if (!CanReadInfectionMeter(cadaverGrowths[i], playerId))
+            for (int i = 0; i < spawnedEnemies.Count; i++)
             {
-                continue;
-            }
+                CadaverGrowthAI cadaverGrowth = spawnedEnemies[i] as CadaverGrowthAI;
+                if (cadaverGrowth == null)
+                {
+                    continue;
+                }
 
-            cachedCadaverGrowth = cadaverGrowths[i];
-            nextCadaverGrowthLookupTime = Time.unscaledTime + SuccessfulCadaverGrowthLookupIntervalSeconds;
-            return cachedCadaverGrowth;
+                if (firstCadaverGrowth == null)
+                {
+                    firstCadaverGrowth = cadaverGrowth;
+                }
+
+                if (!CanReadInfectionMeter(cadaverGrowth, playerId))
+                {
+                    continue;
+                }
+
+                cachedCadaverGrowth = cadaverGrowth;
+                nextCadaverGrowthLookupTime = now + SuccessfulCadaverGrowthLookupIntervalSeconds;
+                return cachedCadaverGrowth;
+            }
         }
 
-        cachedCadaverGrowth = cadaverGrowths.Length > 0 ? cadaverGrowths[0] : null;
-        nextCadaverGrowthLookupTime = Time.unscaledTime + MissingCadaverGrowthLookupIntervalSeconds;
+        cachedCadaverGrowth = firstCadaverGrowth;
+        nextCadaverGrowthLookupTime = now + (firstCadaverGrowth != null
+            ? SuccessfulCadaverGrowthLookupIntervalSeconds
+            : MissingCadaverGrowthLookupIntervalSeconds);
         return cachedCadaverGrowth;
     }
 

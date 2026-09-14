@@ -4,52 +4,62 @@
     <OutputType>Library</OutputType>
     <RootNamespace>IndependentCadaverInfectionBar</RootNamespace>
     <AssemblyName>InfectionBar</AssemblyName>
-    <Version>1.1.2</Version>
+    <Version>1.2.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 
   <PropertyGroup>
-    <GameManagedDir>D:\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\</GameManagedDir>
-    <BepInExCoreDir>D:\111\1202\BepInEx\core\</BepInExCoreDir>
+    <GameDir Condition="'$(GameDir)' == ''">$(INFECTIONBAR_GAME_DIR)</GameDir>
+    <TestProfileDir Condition="'$(TestProfileDir)' == ''">$(INFECTIONBAR_PROFILE_DIR)</TestProfileDir>
+    <GameManagedDir Condition="'$(GameManagedDir)' == ''">$(GameDir)\Lethal Company_Data\Managed\</GameManagedDir>
+    <BepInExCoreDir Condition="'$(BepInExCoreDir)' == ''">$(TestProfileDir)\BepInEx\core\</BepInExCoreDir>
+    <LethalConfigDir Condition="'$(LethalConfigDir)' == ''">$(TestProfileDir)\BepInEx\plugins\AinaVT-LethalConfig\LethalConfig\</LethalConfigDir>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
+
+    <Reference Include="Assembly-CSharp" Publicize="true">
       <HintPath>$(GameManagedDir)Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine">
+    <Reference Include="UnityEngine" Publicize="true">
       <HintPath>$(GameManagedDir)UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.CoreModule">
+    <Reference Include="UnityEngine.CoreModule" Publicize="true">
       <HintPath>$(GameManagedDir)UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.UI">
+    <Reference Include="UnityEngine.AnimationModule" Publicize="true">
+      <HintPath>$(GameManagedDir)UnityEngine.AnimationModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI" Publicize="true">
       <HintPath>$(GameManagedDir)UnityEngine.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.UIModule">
+    <Reference Include="UnityEngine.UIModule" Publicize="true">
       <HintPath>$(GameManagedDir)UnityEngine.UIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.TextRenderingModule">
+    <Reference Include="UnityEngine.TextRenderingModule" Publicize="true">
       <HintPath>$(GameManagedDir)UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.TextMeshPro">
+    <Reference Include="Unity.TextMeshPro" Publicize="true">
       <HintPath>$(GameManagedDir)Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.Netcode.Runtime">
+    <Reference Include="Unity.Netcode.Runtime" Publicize="true">
       <HintPath>$(GameManagedDir)Unity.Netcode.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.Collections">
+    <Reference Include="Unity.Collections" Publicize="true">
       <HintPath>$(GameManagedDir)Unity.Collections.dll</HintPath>
       <Private>False</Private>
     </Reference>
@@ -57,20 +67,13 @@
       <HintPath>$(BepInExCoreDir)BepInEx.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="0Harmony">
-      <HintPath>$(BepInExCoreDir)0Harmony.dll</HintPath>
+    <Reference Include="LethalConfig">
+      <HintPath>$(LethalConfigDir)LethalConfig.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="bin\**\*.cs" />
-    <Compile Remove="obj\**\*.cs" />
-    <Compile Remove="build_tmpbin\**\*.cs" />
-    <Compile Remove="build_tmpobj\**\*.cs" />
-    <Compile Remove="tempbin\**\*.cs" />
-    <Compile Remove="github\**\*.cs" />
-    <Compile Remove="thunderstore\**\*.cs" />
-    <Compile Remove="thunderstore-tools\**\*.cs" />
+    <Compile Include="src/**/*.cs" />
   </ItemGroup>
 </Project>

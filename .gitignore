@@ -16,3 +16,5 @@ _snapshots/
 .vs/
 .vscode/
 *.log
+
+.codex/
